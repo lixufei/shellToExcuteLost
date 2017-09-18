@@ -12,23 +12,31 @@ db.person.find({$or: [{"leads.status": "LOST_SALES"}, {"leads.status": "UNSUCCES
 })
 
 db.person.find({$or: [{"leads.status": "LOST_SALES"}, {"leads.status": "UNSUCCESSFUL"}]}).forEach(function(person) {
-	var leadStatusList = person.leads.map(function(lead) {return lead.status;});
-	var uniqueLeadStatusList = leadStatusList.filter(onlyUnique);
-	var lostOrUnsuccessfulStatusList = uniqueLeadStatusList.filter(function(status) {
-		return status === 'LOST_SALES' || status === 'UNSUCCESSFUL';
+	var groupedLeads = groupByOwnerSalesConsultant(person.leads);
+	var groupedSalesConsultantGemsUserIds = Object.keys(groupedLeads);
+	groupedSalesConsultantGemsUserIds.forEach(function(ownerSalesConsultantId) {
+		var uniqueLeadStatusList = groupedLeads[ownerSalesConsultantId].map(function(lead) {return lead.status;}).filter(onlyUnique);
+		var lostOrUnsuccessfulStatus = uniqueLeadStatusList.filter(function(status){return status === 'LOST_SALES' || status === 'UNSUCCESSFUL';});
+		if (uniqueLeadStatusList.length === lostOrUnsuccessfulStatus.length) {
+			customerIdsWithGemsUserIds.push({'customer_id':person._id.valueOf(), 'gems_user_id': ownerSalesConsultantId});
+			gemsUserIds.push(ownerSalesConsultantId);
+		}
 	});
-	if (uniqueLeadStatusList.length === lostOrUnsuccessfulStatusList.length) {
-		person.leads.forEach(function(lead) {
-			if (lead.ownerSalesConsultantId !== undefined) {
-				customerIdsWithGemsUserIds.push({'customer_id':person._id.valueOf(), 'gems_user_id': lead.ownerSalesConsultantId});
-				gemsUserIds.push(lead.ownerSalesConsultantId);
-			}
-		})
-	}
+
 })
 
 function onlyUnique(value, index, self) { 
     return self.indexOf(value) === index;
+}
+
+function groupByOwnerSalesConsultant(leads) {
+	return leads.reduce(function(result, currentLead) {
+		if (currentLead.ownerSalesConsultantId !== undefined) {
+			result[currentLead.ownerSalesConsultantId] = result[currentLead.ownerSalesConsultantId] || [];
+			result[currentLead.ownerSalesConsultantId].push(currentLead);
+		}
+		return result;
+	}, Object.create(null));
 }
 
 function getUnitUpdateSql(leadIds) {
