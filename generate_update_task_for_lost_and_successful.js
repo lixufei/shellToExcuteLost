@@ -32,7 +32,7 @@ function onlyUnique(value, index, self) {
 }
 
 function getUnitUpdateSql(leadIds) {
-	return 'update otr_account.todo_task set done_time = (NOW() + INTERVAL 8 hour), status = "DONE", comments = "线索失销，任务自动完成" where related_lead_id in ' + leadIds + ';';
+	return 'update otr_account.todo_task set done_time = NOW(), status = "DONE", comments = "线索失销，任务自动完成" where related_lead_id in ' + leadIds + ';';
 }
 
 function getUnitInsertSql(customerIdsGemsUserIds) {
@@ -124,7 +124,7 @@ function createUndoneTaskIdTable(gemsUserIds) {
 }
 
 function updateCustomerTaskTable() {
-	return 'update otr_customer.customer_task customer_task, otr_customer.undone_task_id undone_task_id set done_time = (NOW() + INTERVAL 8 hour), status = "DONE", comments = "线索失销，任务自动完成" where customer_task.id in (select id from undone_task_id);';
+	return 'update otr_customer.customer_task customer_task, otr_customer.undone_task_id undone_task_id set done_time = NOW(), status = "DONE", comments = "线索失销，任务自动完成" where customer_task.id in (select id from undone_task_id);';
 }
 
 function dropTempUndoneCustomerTaskTable() {
